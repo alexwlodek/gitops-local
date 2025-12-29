@@ -44,6 +44,11 @@ else
   kubectl config current-context
 fi
 
+log "Labeling nodes for ingress scheduling..."
+kubectl label node "${CLUSTER_NAME}-control-plane" ingress-ready=true --overwrite >/dev/null 2>&1 || true
+kubectl label node "${CLUSTER_NAME}-worker" ingress-ready=true --overwrite >/dev/null 2>&1 || true
+
+
 # 2) Install Argo CD
 if kubectl get ns "${ARGOCD_NS}" >/dev/null 2>&1; then
   log "Namespace '${ARGOCD_NS}' already exists. Skipping namespace create."
@@ -80,25 +85,5 @@ fi
 log "Applying root app: ${ROOT_APP_PATH}"
 kubectl apply -f "${ROOT_APP_PATH}"
 
-# 6) (Optional) Start port-forward in background
-log "Starting Argo CD UI port-forward in background on https://localhost:${ARGOCD_LOCAL_PORT}"
-PF_PID_FILE=".argocd-portforward.pid"
 
-# Kill old PF if exists
-if [[ -f "${PF_PID_FILE}" ]]; then
-  oldpid="$(cat "${PF_PID_FILE}" || true)"
-  if [[ -n "${oldpid}" ]] && ps -p "${oldpid}" >/dev/null 2>&1; then
-    warn "Existing Argo CD port-forward PID ${oldpid} found. Stopping it."
-    kill "${oldpid}" || true
-  fi
-  rm -f "${PF_PID_FILE}"
-fi
-
-# Run in background
-nohup kubectl -n "${ARGOCD_NS}" port-forward svc/argocd-server "${ARGOCD_LOCAL_PORT}:443" \
-  >/tmp/argocd-portforward.log 2>&1 &
-
-echo $! > "${PF_PID_FILE}"
-log "Port-forward PID: $(cat "${PF_PID_FILE}")"
-log "Log file: /tmp/argocd-portforward.log"
 log "Done."
