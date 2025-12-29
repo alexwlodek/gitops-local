@@ -49,16 +49,15 @@ prometheus:
           resources:
             requests:
               storage: 10Gi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - prometheus.local
+    paths:
+      - /
+    pathType: Prefix
 
-# Ingress dla Prometheusa w kube-prometheus-stack jest pod "prometheusIngress"
-prometheusIngress:
-  enabled: true
-  ingressClassName: nginx
-  hosts:
-    - prometheus.local
-  paths:
-    - /
-  pathType: Prefix
 
 # --- Alertmanager ---
 alertmanager:
@@ -72,15 +71,14 @@ alertmanager:
           resources:
             requests:
               storage: 2Gi
-
-alertmanagerIngress:
-  enabled: true
-  ingressClassName: nginx
-  hosts:
-    - alertmanager.local
-  paths:
-    - /
-  pathType: Prefix
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - alertmanager.local
+    paths:
+      - /
+    pathType: Prefix  
 
 # --- Eksportery / komponenty K8s ---
 kubeStateMetrics:
