@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-validate:
+    name: Lint and validate (YAML, Helm, scripts)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # YAML lint (GitOps + charts)
+      # -------------------------
+      - name: Install yamllint
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install yamllint
+
+      - name: Run yamllint
+        run: |
+          yamllint -d "{extends: default, rules: {line-length: {max: 140, level: warning}}}" \
+            gitops charts
+
+      # -------------------------
+      # Shell scripts lint
+      # -------------------------
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck
+        run: shellcheck scripts/*.sh || true
+        # Jeśli chcesz failować build na błędach, usuń "|| true"
+
+      # -------------------------
+      # Helm lint + template
+      # -------------------------
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+
+      - name: Helm lint (echo chart)
+        run: helm lint charts/echo
+
+      - name: Helm template (echo chart with dev values)
+        run: |
+          helm template echo charts/echo \
+            -f gitops/clusters/dev/values/echo-values.yaml \
+            --namespace demo > /tmp/echo-rendered.yaml
+
+      # -------------------------
+      # Kubernetes schema validation
+      # -------------------------
+      - name: Install kubeconform
+        run: |
+          curl -sSL -o kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform.tar.gz kubeconform
+          sudo mv kubeconform /usr/local/bin/kubeconform
+
+      - name: Validate rendered manifests with kubeconform
+        run: |
+          kubeconform \
+            -strict \
+            -ignore-missing-schemas \
+            -summary \
+            /tmp/echo-rendered.yaml
+
+  e2e-kind:
+    name: E2E (KIND + Argo CD + ingress + echo)
+    runs-on: ubuntu-latest
+    needs: [ lint-and-validate ]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kind
+        uses: helm/kind-action@v1.10.0
+        with:
+          config: infra/kind/kind-cluster.yaml
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.4
+
+      - name: Install Argo CD
+        run: |
+          kubectl create ns argocd || true
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl -n argocd wait --for=condition=Available deployment/argocd-server --timeout=300s
+          kubectl -n argocd wait --for=condition=Available deployment/argocd-repo-server --timeout=300s
+          kubectl -n argocd wait --for=condition=Available deployment/argocd-applicationset-controller --timeout=300s
+          kubectl -n argocd wait --for=condition=Available deployment/argocd-redis --timeout=300s
+          kubectl -n argocd wait --for=condition=Available deployment/argocd-notifications-controller --timeout=300s
+          kubectl -n argocd rollout status statefulset/argocd-application-controller --timeout=300s
+
+      - name: Apply root app
+        run: kubectl apply -f gitops/clusters/dev/root-app.yaml
+
+      - name: Wait for ingress-nginx and echo
+        run: |
+          kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=300s
+          kubectl -n demo rollout status deployment/echo --timeout=300s
+
+      - name: Smoke test (in-cluster)
+        run: |
+          # Test echo via in-cluster Service (fast, reliable)
+          kubectl -n demo run curl --image=curlimages/curl:8.9.1 --restart=Never -i --rm -- \
+            curl -fsS http://echo.demo.svc.cluster.local:80 >/dev/null

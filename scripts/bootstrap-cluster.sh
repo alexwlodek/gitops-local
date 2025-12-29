@@ -45,8 +45,7 @@ else
 fi
 
 log "Labeling nodes for ingress scheduling..."
-kubectl label node "${CLUSTER_NAME}-control-plane" ingress-ready=true --overwrite >/dev/null 2>&1 || true
-kubectl label node "${CLUSTER_NAME}-worker" ingress-ready=true --overwrite >/dev/null 2>&1 || true
+kubectl get nodes -o name | xargs -I{} kubectl label {} ingress-ready=true --overwrite >/dev/null 2>&1 || true
 
 
 # 2) Install Argo CD
@@ -65,6 +64,9 @@ kubectl apply -n "${ARGOCD_NS}" \
 log "Waiting for Argo CD deployments to be available..."
 kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-server --timeout=300s
 kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-repo-server --timeout=300s
+kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-applicationset-controller --timeout=300s || true
+kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-redis --timeout=300s || true
+kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-notifications-controller --timeout=300s || true
 kubectl -n "${ARGOCD_NS}" rollout status statefulset/argocd-application-controller --timeout=300s
 
 # Optional: argocd-dex-server may be disabled depending on config; wait only if exists
