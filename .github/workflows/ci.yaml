@@ -36,8 +36,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Run shellcheck
-        run: shellcheck scripts/*.sh || true
-        # Jeśli chcesz failować build na błędach, usuń "|| true"
+        run: shellcheck scripts/*.sh
+        
 
       # -------------------------
       # Helm lint + template
