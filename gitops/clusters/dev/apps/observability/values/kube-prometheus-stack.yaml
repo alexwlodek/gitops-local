@@ -1,0 +1,94 @@
+# --- Globalne ustawienia pomocnicze (opcjonalnie) ---
+global:
+  rbac:
+    create: true
+
+# --- Grafana ---
+grafana:
+  enabled: true
+
+  # Minimum security: ustaw admin password (w labie OK).
+  adminUser: admin
+  adminPassword: "ChangeMe-LocalLab"
+
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: standard     # <- PODMIEŃ
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx        # <- PODMIEŃ, jeśli inna
+    hosts:
+      - grafana.local
+    path: /
+    pathType: Prefix
+
+  # Drobna oszczędność zasobów w labie (możesz wyłączyć, jeśli chcesz pełen zestaw)
+  sidecar:
+    dashboards:
+      enabled: true
+    datasources:
+      enabled: true
+
+# --- Prometheus ---
+prometheus:
+  enabled: true
+  prometheusSpec:
+    retention: 7d
+    retentionSize: "4GB"
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard   # <- PODMIEŃ
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+# Ingress dla Prometheusa w kube-prometheus-stack jest pod "prometheusIngress"
+prometheusIngress:
+  enabled: true
+  ingressClassName: nginx
+  hosts:
+    - prometheus.local
+  paths:
+    - /
+  pathType: Prefix
+
+# --- Alertmanager ---
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard   # <- PODMIEŃ
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+
+alertmanagerIngress:
+  enabled: true
+  ingressClassName: nginx
+  hosts:
+    - alertmanager.local
+  paths:
+    - /
+  pathType: Prefix
+
+# --- Eksportery / komponenty K8s ---
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+# W labie często OK. Jeśli masz problemy z zasobami, można ograniczyć scrape.
+# prometheusOperator:
+#   enabled: true
