@@ -6,3 +6,6 @@ rules:
     level: warning
 
   document-start: disable
+
+ignore: |
+  charts/**/templates/**
