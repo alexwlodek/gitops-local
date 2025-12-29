@@ -44,30 +44,6 @@ Host (Browser / curl)
 
 ---
 
-## Repository structure
-
-infra/
-  kind/
-    kind-cluster.yaml        # KIND cluster definition
-
-gitops/
-  clusters/
-    dev/
-      root-app.yaml          # App-of-Apps entry point
-      apps/                  # Argo CD Application definitions
-      manifests/             # Plain Kubernetes manifests (Ingress, etc.)
-      values/                # Helm values per environment
-
-charts/
-  echo/                      # Example Helm chart
-
-scripts/
-  up.sh                      # Create cluster + install Argo CD
-  down.sh                    # Delete cluster
-  test-echo.sh               # Smoke test via ingress
-
----
-
 ## Prerequisites
 
 The following tools must be installed locally:
