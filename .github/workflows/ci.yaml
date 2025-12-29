@@ -27,8 +27,7 @@ jobs:
 
       - name: Run yamllint
         run: |
-          yamllint -d "{extends: default, rules: {line-length: {max: 140, level: warning}}}" \
-            gitops charts
+          yamllint gitops charts
 
       # -------------------------
       # Shell scripts lint
