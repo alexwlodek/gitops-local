@@ -17,7 +17,7 @@ spec:
     helm:
       releaseName: kube-prometheus-stack
       valueFiles:
-        - $values/gitops/clusters/dev/values/kube-prometheus-stack-values.yaml
+        - ../../gitops/clusters/dev/values/kube-prometheus-stack-values.yaml
 
   syncPolicy:
     automated:
