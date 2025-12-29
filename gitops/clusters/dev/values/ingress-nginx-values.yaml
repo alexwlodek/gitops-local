@@ -1,0 +1,19 @@
+controller:
+  replicaCount: 1
+
+  service:
+    type: NodePort
+
+  nodeSelector:
+    ingress-ready: "true"
+
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  admissionWebhooks:
+    enabled: true
+
+defaultBackend:
+  enabled: true
