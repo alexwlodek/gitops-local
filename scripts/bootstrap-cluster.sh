@@ -60,7 +60,7 @@ kubectl apply -n "${ARGOCD_NS}" \
 log "Waiting for Argo CD deployments to be available..."
 kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-server --timeout=300s
 kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-repo-server --timeout=300s
-kubectl -n "${ARGOCD_NS}" wait --for=condition=Available deployment/argocd-application-controller --timeout=300s
+kubectl -n "${ARGOCD_NS}" rollout status statefulset/argocd-application-controller --timeout=300s
 
 # Optional: argocd-dex-server may be disabled depending on config; wait only if exists
 if kubectl -n "${ARGOCD_NS}" get deployment argocd-dex-server >/dev/null 2>&1; then
