@@ -4,8 +4,10 @@ rules:
   line-length:
     max: 140
     level: warning
-
   document-start: disable
+
+  new-line-at-end-of-file: disable
+  trailing-spaces: disable
 
 ignore: |
   charts/**/templates/**

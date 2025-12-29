@@ -27,7 +27,7 @@ jobs:
 
       - name: Run yamllint
         run: |
-          yamllint gitops charts
+          yamllint parsable gitops charts
 
       # -------------------------
       # Shell scripts lint
