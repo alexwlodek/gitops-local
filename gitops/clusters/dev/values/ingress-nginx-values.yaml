@@ -2,7 +2,10 @@ controller:
   replicaCount: 1
 
   service:
-    type: ClusterIP
+    type: NodePort
+    nodePorts:
+      http: 30080
+      https: 30443
 
   nodeSelector:
     ingress-ready: "true"
