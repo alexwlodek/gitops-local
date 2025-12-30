@@ -9,7 +9,7 @@ grafana:
 
   
   adminUser: admin
-  adminPassword: "ChangeMe-LocalLab"
+  adminPassword: "admin"
 
   persistence:
     enabled: true

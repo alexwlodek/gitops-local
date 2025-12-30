@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-metrics-log-api
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  metrics-log-api.json: |
+    {
+      "title": "metrics-log-api",
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "panels": []
+    }
