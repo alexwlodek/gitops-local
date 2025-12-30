@@ -6,7 +6,6 @@ on:
     paths:
       - "apps/metrics-log-api/**"
       - "charts/metrics-log-api/**"
-      - "gitops/clusters/dev/**"
       - ".github/workflows/build-metrics-log-api.yaml"
   workflow_dispatch: {}
 
@@ -25,6 +24,7 @@ env:
 
 jobs:
   build_push_and_bump:
+    if: ${{ !contains(github.event.head_commit.message, 'chore(gitops): bump metrics-log-api image') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -70,7 +70,10 @@ jobs:
           yq --version
 
       - name: Update GitOps values (image repository + tag)
+        shell: bash
         run: |
+          set -euo pipefail
+
           FILE="${{ env.VALUES_FILE }}"
           IMAGE="${{ steps.vars.outputs.image }}"
           TAG="${{ steps.vars.outputs.tag }}"
@@ -78,12 +81,12 @@ jobs:
           mkdir -p "$(dirname "$FILE")"
 
           if [ ! -f "$FILE" ]; then
-            cat > "$FILE" <<EOF
-image:
-  repository: ${IMAGE}
-  tag: "${TAG}"
-  pullPolicy: IfNotPresent
-EOF
+            printf '%s\n' \
+              "image:" \
+              "  repository: ${IMAGE}" \
+              "  tag: \"${TAG}\"" \
+              "  pullPolicy: IfNotPresent" \
+              > "$FILE"
           else
             yq -i ".image.repository = \"${IMAGE}\"" "$FILE"
             yq -i ".image.tag = \"${TAG}\"" "$FILE"
