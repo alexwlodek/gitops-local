@@ -24,7 +24,6 @@ env:
 
 jobs:
   build_push_and_bump:
-    if: ${{ !contains(github.event.head_commit.message, 'chore(gitops): bump metrics-log-api image') }}
     runs-on: ubuntu-latest
 
     steps:
