@@ -12,7 +12,7 @@ spec:
   selector:
     matchLabels:
       {{- include "metrics-log-api.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: api
+      app.kubernetes.io/name: metrics-log-api
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}
