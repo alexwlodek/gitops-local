@@ -75,8 +75,8 @@ jobs:
           IMAGE="${{ steps.vars.outputs.image }}"
           TAG="${{ steps.vars.outputs.tag }}"
 
-          # ensure file exists
           mkdir -p "$(dirname "$FILE")"
+
           if [ ! -f "$FILE" ]; then
             cat > "$FILE" <<EOF
 image:
