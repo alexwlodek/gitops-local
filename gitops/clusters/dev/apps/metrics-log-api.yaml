@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-log-api
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: metrics-log-api
+    app.kubernetes.io/part-of: demo
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/alexwlodek/gitops-local.git
+    targetRevision: main
+    path: charts/metrics-log-api
+    helm:
+      releaseName: metrics-log-api
+      valueFiles:
+        - ../../gitops/clusters/dev/values/metrics-log-api.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

@@ -7,27 +7,27 @@ global:
 grafana:
   enabled: true
 
-  # Minimum security: ustaw admin password (w labie OK).
+  
   adminUser: admin
   adminPassword: "ChangeMe-LocalLab"
 
   persistence:
     enabled: true
     type: pvc
-    storageClassName: standard     # <- PODMIEŃ
+    storageClassName: standard
     accessModes:
       - ReadWriteOnce
     size: 5Gi
 
   ingress:
     enabled: true
-    ingressClassName: nginx        # <- PODMIEŃ, jeśli inna
+    ingressClassName: nginx
     hosts:
       - grafana.local
     path: /
     pathType: Prefix
 
-  # Drobna oszczędność zasobów w labie (możesz wyłączyć, jeśli chcesz pełen zestaw)
+  
   sidecar:
     dashboards:
       enabled: true
@@ -44,7 +44,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: standard   # <- PODMIEŃ
+          storageClassName: standard
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -66,7 +66,7 @@ alertmanager:
     storage:
       volumeClaimTemplate:
         spec:
-          storageClassName: standard   # <- PODMIEŃ
+          storageClassName: standard
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -80,13 +80,11 @@ alertmanager:
       - /
     pathType: Prefix  
 
-# --- Eksportery / komponenty K8s ---
+
 kubeStateMetrics:
   enabled: true
 
 nodeExporter:
   enabled: true
 
-# W labie często OK. Jeśli masz problemy z zasobami, można ograniczyć scrape.
-# prometheusOperator:
-#   enabled: true
+

@@ -1,0 +1,87 @@
+replicaCount: 2
+
+image:
+  repository: metrics-log-api
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+containerPort: 3000
+
+env:
+  PORT: "3000"
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+livenessProbe:
+  enabled: true
+  path: /healthz
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  enabled: true
+  path: /readyz
+  initialDelaySeconds: 2
+  periodSeconds: 5
+
+serviceMonitor:
+  enabled: true
+  # Dopasuj do release name Twojego kube-prometheus-stack jeśli selektory tego wymagają
+  labels:
+    release: kube-prometheus-stack
+  interval: 15s
+  path: /metrics
+
+trafficGenerator:
+  enabled: true
+  replicaCount: 1
+  image: curlimages/curl:8.11.0
+  pullPolicy: IfNotPresent
+  sleepSeconds: 0.2
+  distribution:
+    okPercent: 80
+    slowPercent: 15
+    errorPercent: 5
+  slow:
+    baseMs: 300
+    rangeMs: 900
+    jitterMs: 200
+  error:
+    code: 500
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+podLabels: {}
+podAnnotations: {}
+
+securityContext:
+  enabled: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+# Jeśli chcesz, możesz dodać nodeSelector/tolerations/affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}

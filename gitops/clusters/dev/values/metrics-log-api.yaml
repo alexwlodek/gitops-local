@@ -1,0 +1,4 @@
+image:
+  repository: ghcr.io/alexwlodek/metrics-log-api
+  tag: "sha-LOCAL"
+  pullPolicy: Always

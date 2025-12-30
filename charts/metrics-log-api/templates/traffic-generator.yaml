@@ -1,0 +1,61 @@
+{{- if .Values.trafficGenerator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metrics-log-api.fullname" . }}-traffic
+  labels:
+    {{- include "metrics-log-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: traffic-generator
+spec:
+  replicas: {{ .Values.trafficGenerator.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "metrics-log-api.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: traffic-generator
+  template:
+    metadata:
+      labels:
+        {{- include "metrics-log-api.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: traffic-generator
+    spec:
+      containers:
+        - name: generator
+          image: {{ .Values.trafficGenerator.image }}
+          imagePullPolicy: {{ .Values.trafficGenerator.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              echo "traffic-generator starting"
+              OK={{ .Values.trafficGenerator.distribution.okPercent }}
+              SLOW={{ .Values.trafficGenerator.distribution.slowPercent }}
+              ERR={{ .Values.trafficGenerator.distribution.errorPercent }}
+              if [ $((OK+SLOW+ERR)) -ne 100 ]; then
+                echo "distribution must sum to 100 (ok+slow+error)" >&2
+                exit 1
+              fi
+
+              SVC="http://{{ include "metrics-log-api.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+              while true; do
+                r=$((RANDOM % 100))
+
+                if [ "$r" -lt "$OK" ]; then
+                  curl -sS -m 2 "${SVC}/" >/dev/null || true
+
+                elif [ "$r" -lt $((OK+SLOW)) ]; then
+                  base={{ .Values.trafficGenerator.slow.baseMs }}
+                  range={{ .Values.trafficGenerator.slow.rangeMs }}
+                  jitter={{ .Values.trafficGenerator.slow.jitterMs }}
+                  ms=$((base + (RANDOM % range)))
+                  curl -sS -m 5 "${SVC}/slow?ms=${ms}&jitter=${jitter}" >/dev/null || true
+
+                else
+                  code={{ .Values.trafficGenerator.error.code }}
+                  curl -sS -m 2 "${SVC}/error?code=${code}" >/dev/null || true
+                fi
+
+                sleep {{ .Values.trafficGenerator.sleepSeconds }}
+              done
+          resources:
+            {{- toYaml .Values.trafficGenerator.resources | nindent 12 }}
+{{- end }}

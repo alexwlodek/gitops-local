@@ -1,0 +1,6 @@
+apiVersion: v2
+name: metrics-log-api
+description: Demo Go app that exposes Prometheus metrics and structured logs + traffic generator
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

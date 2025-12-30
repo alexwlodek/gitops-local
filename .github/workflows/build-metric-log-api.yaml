@@ -1,0 +1,98 @@
+name: build-metrics-log-api
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/metrics-log-api/**"
+      - "charts/metrics-log-api/**"
+      - "gitops/clusters/dev/**"
+      - ".github/workflows/build-metrics-log-api.yaml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: build-metrics-log-api
+  cancel-in-progress: true
+
+env:
+  APP_DIR: apps/metrics-log-api
+  VALUES_FILE: gitops/clusters/dev/values/metrics-log-api.yaml
+  IMAGE_NAME: metrics-log-api
+
+jobs:
+  build_push_and_bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute image refs
+        id: vars
+        run: |
+          SHA_SHORT="$(echo "${GITHUB_SHA}" | cut -c1-8)"
+          OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_NAME}"
+          echo "sha_short=${SHA_SHORT}" >> $GITHUB_OUTPUT
+          echo "image=${IMAGE}" >> $GITHUB_OUTPUT
+          echo "tag=sha-${SHA_SHORT}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.APP_DIR }}
+          file: ./${{ env.APP_DIR }}/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}
+            ${{ steps.vars.outputs.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Update GitOps values (image repository + tag)
+        run: |
+          FILE="${{ env.VALUES_FILE }}"
+          IMAGE="${{ steps.vars.outputs.image }}"
+          TAG="${{ steps.vars.outputs.tag }}"
+
+          # ensure file exists
+          mkdir -p "$(dirname "$FILE")"
+          if [ ! -f "$FILE" ]; then
+            cat > "$FILE" <<EOF
+image:
+  repository: ${IMAGE}
+  tag: "${TAG}"
+  pullPolicy: IfNotPresent
+EOF
+          else
+            yq -i ".image.repository = \"${IMAGE}\"" "$FILE"
+            yq -i ".image.tag = \"${TAG}\"" "$FILE"
+          fi
+
+      - name: Commit & push GitOps bump
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add "${{ env.VALUES_FILE }}"
+          git commit -m "chore(gitops): bump metrics-log-api image to ${{ steps.vars.outputs.tag }}" || exit 0
+          git push
