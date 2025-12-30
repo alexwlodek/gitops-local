@@ -27,6 +27,25 @@ grafana:
     path: /
     pathType: Prefix
 
+  initChownData:
+    enabled: false
+
+  securityContext:
+    fsGroup: 472
+    fsGroupChangePolicy: "OnRootMismatch"
+
+  containerSecurityContext:
+    runAsUser: 472
+    runAsGroup: 472
+    runAsNonRoot: true
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
   
   sidecar:
     dashboards:
